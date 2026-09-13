@@ -26,7 +26,7 @@ if [ -f /etc/os-release ]; then
     sed -i 's/^PRETTY_NAME=.*/PRETTY_NAME="doshyos-OG (based on Debian 12)"/' /etc/os-release
     sed -i 's/^NAME=.*/NAME="doshyos-OG"/' /etc/os-release
 fi
-printf 'doshy OS \\n \\l\n\n' > /etc/issue
+printf 'doshyos-OG \\n \\l\n\n' > /etc/issue
 
 # Default Firefox settings: don't nag about being the default browser
 mkdir -p /usr/lib/firefox-esr/distribution
