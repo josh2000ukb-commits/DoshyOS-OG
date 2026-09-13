@@ -72,11 +72,29 @@ class DisplayTests(unittest.TestCase):
         layout[0].update(mode=None, primary=False)
         layout[1]["rotation"] = "left"
         command = display.command(layout, self.outputs)
-        self.assertEqual(command[1:4], ["--output", "HDMI-1", "--off"])
+        self.assertEqual(command[3:6], ["--output", "HDMI-1", "--off"])
+        self.assertIn("1440x2560", command)
         self.assertIn("144.00", command)
         self.assertIn("left", command)
-        self.assertIn("0x0", command)
+        self.assertNotIn("--panning", command)
+        self.assertNotIn("--transform", command)
         self.assertEqual(command.count("--primary"), 1)
+
+    def test_framebuffer_follows_larger_monitor_when_swapped(self):
+        layout = display.snapshot(self.outputs)
+        layout[0]["x"], layout[1]["x"] = 2560, 0
+        command = display.command(layout, self.outputs)
+        self.assertIn("--fb", command)
+        self.assertEqual(command[command.index("--fb") + 1], "4480x1440")
+
+    def test_apply_turns_outputs_off_before_new_layout(self):
+        layout = display.snapshot(self.outputs)
+        calls = []
+        with patch.object(display, "query", side_effect=[self.outputs, self.outputs]), \
+                patch.object(display, "run", side_effect=lambda args, **kwargs: calls.append(args)):
+            display.apply(layout)
+        self.assertEqual(calls[1][0:4], ["xrandr", "--output", "HDMI-1", "--off"])
+        self.assertEqual(calls[2][0:3], ["xrandr", "--fb", "4480x1440"])
 
     def test_invalid_layouts_fail_before_randr(self):
         for mutation in (lambda l: l[0].update(mode="8000x8000"),
