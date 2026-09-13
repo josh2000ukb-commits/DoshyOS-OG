@@ -93,7 +93,7 @@ class DisplayTests(unittest.TestCase):
         with patch.object(display, "query", side_effect=[self.outputs, self.outputs]), \
                 patch.object(display, "run", side_effect=lambda args, **kwargs: calls.append(args)):
             display.apply(layout)
-        self.assertEqual(calls[1][0:4], ["xrandr", "--output", "HDMI-1", "--off"])
+        self.assertEqual(calls[1][0:6], ["xrandr", "--fb", "8x8", "--output", "HDMI-1", "--off"])
         self.assertEqual(calls[2][0:3], ["xrandr", "--fb", "4480x1440"])
 
     def test_invalid_layouts_fail_before_randr(self):
