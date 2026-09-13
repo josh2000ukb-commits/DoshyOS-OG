@@ -20,10 +20,12 @@ jobs:
       - name: Install test tools
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3 git ca-certificates
+          apt-get install -y --no-install-recommends python3 git ca-certificates xvfb openbox zenity x11-xserver-utils x11-utils
       - uses: actions/checkout@v4
-      - name: Test the updater
-        run: python3 -m unittest discover -s tests -p 'test_update.py' -v
+      - name: Test desktop tools and updater
+        run: |
+          python3 -B -m unittest discover -s tests -p 'test_*.py' -v
+          bash tests/regressions.sh
       - name: Build cumulative update bundle
         shell: bash
         run: |
@@ -43,4 +45,5 @@ jobs:
           files: out/updates/*
           fail_on_unmatched_files: true
           generate_release_notes: true
+          body_path: updates/${{ github.ref_name }}.md
           make_latest: true
