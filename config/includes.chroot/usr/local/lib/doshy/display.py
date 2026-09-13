@@ -156,7 +156,7 @@ def apply(layout):
     # Clear old CRTCs first.  This makes a swap deterministic when the larger
     # monitor changes sides and prevents stale framebuffer/mouse coordinates.
     names = [output["name"] for output in query()]
-    off = ["xrandr"]
+    off = ["xrandr", "--fb", "8x8"]
     for name in names:
         off += ["--output", name, "--off"]
     run(off)
