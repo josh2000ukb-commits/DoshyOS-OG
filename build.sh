@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SRC_DIR="${SRC_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-export OS_NAME="${OS_NAME:-doshy OS}"
+export OS_NAME="${OS_NAME:-doshyos-OG}"
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "error: this script must be run as root (try: sudo $0)" >&2

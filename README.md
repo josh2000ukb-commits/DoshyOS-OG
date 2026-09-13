@@ -1,4 +1,4 @@
-# doshy OS
+# doshyos-OG
 
 A small Linux operating system (based on Debian 12) with a Windows-style desktop:
 

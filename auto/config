@@ -3,8 +3,8 @@
 # Run via `lb config` (live-build picks this file up automatically).
 set -e
 
-OS_NAME="${OS_NAME:-doshy OS}"
-# Short id used for the hostname and the ISO file name ("doshy OS" -> "doshyos")
+OS_NAME="${OS_NAME:-doshyos-OG}"
+# Short id used for the hostname and the ISO file name.
 OS_ID="$(printf '%s' "$OS_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')"
 
 # Locale / keyboard used on the live system. Change these if you are not in the US.

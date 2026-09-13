@@ -23,8 +23,8 @@ find /etc/skel/.config -type f -exec chmod 644 {} +
 
 # Brand the system as doshy OS (shown in the terminal, installer, etc.)
 if [ -f /etc/os-release ]; then
-    sed -i 's/^PRETTY_NAME=.*/PRETTY_NAME="doshy OS (based on Debian 12)"/' /etc/os-release
-    sed -i 's/^NAME=.*/NAME="doshy OS"/' /etc/os-release
+    sed -i 's/^PRETTY_NAME=.*/PRETTY_NAME="doshyos-OG (based on Debian 12)"/' /etc/os-release
+    sed -i 's/^NAME=.*/NAME="doshyos-OG"/' /etc/os-release
 fi
 printf 'doshy OS \\n \\l\n\n' > /etc/issue
 

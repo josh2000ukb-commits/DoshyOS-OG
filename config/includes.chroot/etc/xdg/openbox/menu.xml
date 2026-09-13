@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <openbox_menu xmlns="http://openbox.org/3.4/menu">
 
-<menu id="root-menu" label="doshy OS">
+<menu id="root-menu" label="doshyos-OG">
   <item label="Files">
     <action name="Execute"><execute>thunar</execute></action>
   </item>

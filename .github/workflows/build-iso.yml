@@ -23,7 +23,7 @@ jobs:
       - name: Build the ISO
         run: bash build.sh
         env:
-          OS_NAME: doshy OS
+          OS_NAME: doshyos-OG
           LIVE_LOCALE: en_US.UTF-8
           LIVE_KEYBOARD: us
           LIVE_TIMEZONE: Etc/UTC

@@ -236,7 +236,7 @@ class Updater:
     def check_system(self):
         os_release = self.path("/etc/os-release").read_text()
         if 'VERSION_CODENAME=bookworm' not in os_release and 'VERSION_CODENAME="bookworm"' not in os_release:
-            raise UpdateError("This updater supports the Debian 12 version of doshy OS only.")
+            raise UpdateError("This updater supports the Debian 12 version of doshyos-OG only.")
         if subprocess.check_output(["dpkg", "--print-architecture"], text=True).strip() != "amd64":
             raise UpdateError("This release requires amd64.")
         if self.path("/run/live/medium").exists():

@@ -10,7 +10,7 @@
   .\build.ps1 -Locale en_GB.UTF-8 -Keyboard gb -Timezone Europe/London
 #>
 param(
-    [string]$OsName   = "doshy OS",
+    [string]$OsName   = "doshyos-OG",
     [string]$Locale   = "en_US.UTF-8",
     [string]$Keyboard = "us",
     [string]$Timezone = "Etc/UTC",
