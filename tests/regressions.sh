@@ -54,27 +54,7 @@ grep -qx passwd "$LOG"
 ! grep -q UNEXPECTED "$LOG"
 pass 'standard users change their own password without administrator elevation'
 
-mock xrandr 'if [ "$1" = --query ]; then cat "$HOME/xrandr"; else printf "%s\n" "$*" >> "$LOG"; fi'
-cat > "$HOME/xrandr" <<'EOF'
-HDMI-1 connected primary 1280x720+0+0 (normal)
-   1280x720 60.00*
-   1920x1080 60.00+
-DP-1 connected 1280x1024+1280+0 (normal)
-   1280x1024 60.00*+
-EOF
-mock zenity 'case "$*" in *--list*) echo "Place screens side by side" ;; esac'
-mock pgrep 'exit 1'
-for command in xsetroot openbox tint2 doshy-wallpaper sleep; do mock "$command" 'exit 0'; done
-: > "$LOG"
-sh "$BIN/doshy-display"
-grep -qx -- '--output HDMI-1 --mode 1920x1080 --primary --pos 0x0' "$LOG"
-grep -qx -- '--output DP-1 --mode 1280x1024 --pos 1920x0' "$LOG"
-! grep -q -- '--fb 0x0' "$LOG"
-pass 'preferred display mode is singular and screen offsets match selected modes'
-
-mock xrandr 'if [ "$1" = --query ]; then cat "$HOME/xrandr"; else exit 1; fi'
-if sh "$BIN/doshy-display"; then echo 'display failure was ignored' >&2; exit 1; fi
-pass 'failed display changes return failure'
+# Display behavior is covered by tests/test_desktop.py (transactional RandR).
 
 mock setxkbmap 'printf "<%s>\n" "$@" >> "$LOG"'
 mkdir -p "$XDG_CONFIG_HOME/doshy"
@@ -190,44 +170,6 @@ if sh "$BIN/doshy-install-deb" "$WORK/downloads/example.deb"; then exit 1; fi
 [ ! -s "$LOG" ]
 pass 'failed package staging stops before apt runs'
 
-mock xrandr 'if [ "$1" = --query ]; then cat "$HOME/xrandr"; else printf "%s\n" "$*" >> "$LOG"; fi'
-mock zenity 'case "$*" in *--list*) echo Mirror ;; esac'
-mock pgrep 'exit 1'
-cat > "$HOME/xrandr" <<'EOF'
-HDMI-1 connected primary 1920x1080+0+0
-   1920x1080 60.00*+
-   1280x720 60.00
-DP-1 connected 2560x1440+1920+0
-   2560x1440 60.00*+
-   1280x720 60.00
-EOF
-: > "$LOG"
-sh "$BIN/doshy-display"
-grep -qx -- '--output HDMI-1 --mode 1280x720 --primary --pos 0x0' "$LOG"
-grep -qx -- '--output DP-1 --mode 1280x720 --same-as HDMI-1' "$LOG"
-pass 'mirror mode uses a resolution supported by both monitors'
-
-sed -i '/1280x720/d' "$HOME/xrandr"
-: > "$LOG"
-if sh "$BIN/doshy-display"; then exit 1; fi
-[ ! -s "$LOG" ]
-pass 'unsupported mirroring stops before changing monitors'
-
-cat > "$HOME/xrandr" <<'EOF'
-HDMI-1 connected primary 2560x1440+0+0
-   2560x1440 60.00*+
-   1920x1080 60.00
-DP-1 connected 1920x1080+2560+0
-   1920x1080 60.00*+
-EOF
-mock zenity 'case "$*" in *--list*) echo "Swap screens" ;; esac'
-: > "$LOG"
-sh "$BIN/doshy-display"
-grep -qx -- '--output DP-1 --off' "$LOG"
-grep -qx -- '--output HDMI-1 --off' "$LOG"
-grep -qx -- '--output DP-1 --mode 1920x1080 --primary --pos 0x0' "$LOG"
-grep -qx -- '--output HDMI-1 --mode 2560x1440 --pos 1920x0' "$LOG"
-! grep -q -- '--same-as' "$LOG"
-pass 'swapping mixed-size monitors clears clone state and keeps native modes'
+# Preferred modes, mirroring and swapping are tested in test_desktop.py.
 
 printf '\nAll regression checks passed.\n'
