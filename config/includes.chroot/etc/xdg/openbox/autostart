@@ -4,6 +4,9 @@
 # Keyboard language chosen in Settings (if any)
 doshy-keyboard --restore
 
+# Restore the user's monitors before starting the panel or applications.
+doshy-display --restore
+
 # Wallpaper: one full image on EACH screen (not one picture stretched across both)
 doshy-wallpaper --restore &
 # Screens that appear a moment after login (HDMI) get the wallpaper too
@@ -11,6 +14,7 @@ doshy-wallpaper --restore &
 
 # Bottom bar (start button, running apps, tray, clock)
 tint2 &
+doshy-display --watch &
 
 # Tray applets: Wi-Fi/network, volume
 nm-applet &
