@@ -1,0 +1,54 @@
+# Display server
+xserver-xorg
+xserver-xorg-video-all
+xserver-xorg-input-all
+xinit
+x11-xserver-utils
+x11-utils
+
+# Login manager (shows the user list; automatic login is off on the live USB)
+lightdm
+lightdm-gtk-greeter
+
+# Window manager + Windows-style bottom bar + start menu
+openbox
+tint2
+jgmenu
+
+# Theme / icons / fonts
+arc-theme
+papirus-icon-theme
+adwaita-icon-theme
+fonts-dejavu
+fonts-liberation2
+fonts-noto-color-emoji
+
+# Applications
+xfce4-terminal
+firefox-esr
+# (Discord is downloaded from discord.com and installed by config/hooks/normal/0200-discord.hook.chroot)
+
+# File explorer (Thunar) + USB auto-mount, thumbnails, zip support
+thunar
+thunar-volman
+thunar-archive-plugin
+xarchiver
+tumbler
+gvfs
+gvfs-backends
+gvfs-fuse
+udisks2
+
+# Settings tools (Start menu -> Settings)
+zenity
+arandr
+xwallpaper
+pavucontrol
+
+# Desktop plumbing
+xdg-utils
+xdg-user-dirs
+desktop-file-utils
+
+# GIO desktop-file launcher used by the Applications list
+libglib2.0-bin

@@ -1,0 +1,102 @@
+#!/bin/sh
+# doshy OS - install a downloaded .deb package so it shows up under Start -> Applications.
+#   doshy-install-deb [file.deb]      (no argument: opens a file chooser)
+# Wired up as the default handler for .deb files, so double-clicking one in Files
+# (or "Open" on a finished Firefox download) runs this.
+set -u
+
+TITLE="Install package"
+
+deb="${1:-}"
+if [ -z "$deb" ]; then
+    deb="$(zenity --file-selection --title="Choose a .deb package to install" \
+        --file-filter="Debian packages (*.deb) | *.deb" --file-filter="All files | *" \
+        --filename="$HOME/Downloads/" 2>/dev/null)" || exit 0
+fi
+[ -f "$deb" ] || { zenity --error --title="$TITLE" --text="File not found:\n$deb" 2>/dev/null; exit 1; }
+case "$deb" in /*) ;; *) deb="$PWD/$deb" ;; esac
+
+pkg="$(dpkg-deb -f "$deb" Package 2>/dev/null)"
+ver="$(dpkg-deb -f "$deb" Version 2>/dev/null)"
+arch="$(dpkg-deb -f "$deb" Architecture 2>/dev/null)"
+desc="$(dpkg-deb -f "$deb" Description 2>/dev/null | head -n1)"
+if [ -z "$pkg" ]; then
+    zenity --error --title="$TITLE" --text="This is not a valid .deb package:\n$(basename "$deb")" 2>/dev/null
+    exit 1
+fi
+case "$arch" in
+    amd64|all) ;;
+    *) zenity --error --title="$TITLE" \
+         --text="<b>$pkg</b> is built for '$arch' but this computer needs an <b>amd64</b> (64-bit) package.\nLook for a download marked amd64 or x86_64." 2>/dev/null
+       exit 1 ;;
+esac
+
+if dpkg -s "$pkg" >/dev/null 2>&1; then
+    have="$(dpkg-query -W -f='${Version}' "$pkg" 2>/dev/null)"
+    extra="\n\nCurrently installed: $have (it will be replaced)."
+else
+    extra=""
+fi
+
+zenity --question --title="$TITLE" --width=420 --ok-label="Install" --cancel-label="Cancel" \
+    --text="Install <b>$pkg</b> $ver?\n\n$desc$extra\n\nIt will be installed for all users and appear under <b>Start → Applications</b>." \
+    2>/dev/null || exit 0
+
+work="$(mktemp -d /tmp/doshy-deb.XXXXXX)" || exit 1
+trap 'rm -rf "$work"' EXIT
+trap 'exit 1' HUP INT TERM
+chmod 755 "$work" || exit 1
+cp -- "$deb" "$work/package.deb" || exit 1
+chmod 644 "$work/package.deb" || exit 1
+log="$work/install.log"
+ls /usr/share/applications/*.desktop 2>/dev/null | sort > "$work/before"
+
+# Root access: the live user has password-less sudo; otherwise polkit asks for an admin password.
+if sudo -n true 2>/dev/null; then
+    AS_ROOT="sudo -n"
+else
+    AS_ROOT="pkexec"
+fi
+
+# Install in the background while a progress window pulses
+(
+    $AS_ROOT sh -c '
+        export DEBIAN_FRONTEND=noninteractive
+        echo "== Refreshing package lists (needed for dependencies) =="
+        apt-get update -qq 2>&1 || echo "(no internet? continuing with what is available)"
+        echo "== Installing package =="
+        apt-get install -y --no-install-recommends "$1" 2>&1
+    ' doshy-install-deb "$work/package.deb" > "$log" 2>&1
+    echo $? > "$work/status"
+) &
+job=$!
+(
+    while kill -0 "$job" 2>/dev/null; do
+        last="$(tail -n1 "$log" 2>/dev/null | cut -c1-70)"
+        echo "# Installing $pkg...\n$last"
+        sleep 1
+    done
+    echo 100
+) | zenity --progress --title="$TITLE" --text="Installing $pkg..." --pulsate --auto-close --no-cancel --width=420 2>/dev/null
+wait "$job" 2>/dev/null
+status="$(cat "$work/status" 2>/dev/null || echo 1)"
+
+if [ "$status" = "0" ]; then
+    ls /usr/share/applications/*.desktop 2>/dev/null | sort > "$work/after"
+    names=""
+    for f in $(comm -13 "$work/before" "$work/after"); do
+        grep -q '^NoDisplay=true' "$f" && continue
+        n="$(grep -m1 '^Name=' "$f" | cut -d= -f2-)"
+        [ -n "$n" ] && names="$names\n  •  $n"
+    done
+    if [ -n "$names" ]; then
+        msg="<b>$pkg</b> was installed.\n\nYou can start it from <b>Start → Applications</b>:$names"
+    else
+        msg="<b>$pkg</b> was installed.\n\nIt did not add a menu entry (it may be a command-line tool or a library).\nTry running <tt>$pkg</tt> in the Terminal."
+    fi
+    zenity --info --title="$TITLE" --width=420 --text="$msg" 2>/dev/null
+else
+    zenity --text-info --title="$TITLE - failed" --width=640 --height=420 --filename="$log" 2>/dev/null
+fi
+
+[ "$status" = "0" ]

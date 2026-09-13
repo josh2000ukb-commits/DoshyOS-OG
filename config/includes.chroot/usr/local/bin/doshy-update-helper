@@ -1,0 +1,3 @@
+#!/bin/sh
+# Privileged entry point: configuration and downloads are read again as root.
+exec /usr/bin/python3 -I /usr/local/lib/doshy/update_core.py "$@"

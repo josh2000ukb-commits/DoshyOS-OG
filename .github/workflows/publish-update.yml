@@ -1,0 +1,46 @@
+name: Publish OS update
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-update-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    steps:
+      - name: Install test tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3 git ca-certificates
+      - uses: actions/checkout@v4
+      - name: Test the updater
+        run: python3 -m unittest discover -s tests -p 'test_update.py' -v
+      - name: Build cumulative update bundle
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            python3 scripts/build-update.py --version "${GITHUB_REF_NAME#v}"
+          else
+            python3 scripts/build-update.py
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: doshy-update
+          path: out/updates/*
+      - name: Publish update release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/updates/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          make_latest: true

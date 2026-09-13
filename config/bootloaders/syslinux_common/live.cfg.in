@@ -1,0 +1,30 @@
+label live-@FLAVOUR@
+	menu label ^Start doshy OS
+	menu default
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@ noautologin
+
+label live-@FLAVOUR@-nomodeset
+	menu label Start doshy OS (safe ^graphics mode)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@ noautologin nomodeset
+
+label live-@FLAVOUR@-autologin
+	menu label Start doshy OS with ^automatic login (no login screen)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@
+
+label live-@FLAVOUR@-nopersistence
+	menu label Start doshy OS ^without saving changes
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@ noautologin nopersistence
+
+label live-@FLAVOUR@-failsafe
+	menu label Start doshy OS (^fail-safe mode)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE_FAILSAFE@

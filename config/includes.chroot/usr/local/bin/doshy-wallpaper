@@ -1,0 +1,80 @@
+#!/bin/sh
+# doshy OS - wallpaper on EACH monitor separately.
+# The old nitrogen "xin_-1" mode stretched one image across the whole virtual
+# desktop, so with two screens you saw half the picture on each. This paints
+# the same image, filled, on every connected display.
+#
+#   doshy-wallpaper            pick an image
+#   doshy-wallpaper --restore  apply the saved (or default) image
+#   doshy-wallpaper FILE       use this file
+set -u
+
+CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/doshy"
+CONF="$CONF_DIR/wallpaper"
+DEFAULT=/usr/share/backgrounds/doshy.png
+
+connected_outputs() {
+    xrandr --query 2>/dev/null | awk '$2 == "connected" && $0 ~ /[0-9]+x[0-9]+[+-][0-9]+[+-][0-9]+/ { print $1 }'
+}
+
+render() {
+    image="$1"
+    [ -f "$image" ] || image="$DEFAULT"
+    [ -f "$image" ] || return 1
+
+    if command -v xwallpaper >/dev/null 2>&1; then
+        set --
+        for o in $(connected_outputs); do
+            set -- "$@" --output "$o" --zoom "$image"
+        done
+        [ "$#" -gt 0 ] || return 1
+        xwallpaper "$@" || return 1
+        return 0
+    fi
+
+    # Fallback: one nitrogen head per Xinerama screen (not one spanning canvas)
+    if command -v nitrogen >/dev/null 2>&1; then
+        i=0
+        for o in $(connected_outputs); do
+            nitrogen --head="$i" --set-zoom-fill --save "$image" >/dev/null 2>&1 || return 1
+            i=$((i + 1))
+        done
+        [ "$i" -gt 0 ]
+        return $?
+    fi
+
+    feh --no-fehbg --bg-fill "$image" 2>/dev/null
+}
+
+apply() {
+    render "$1" || return 1
+    # Persist only after rendering succeeds, with a path valid at the next login.
+    case "$image" in /*) ;; *) image="$PWD/$image" ;; esac
+    mkdir -p "$CONF_DIR" || return 1
+    printf '%s\n' "$image" > "$CONF"
+}
+
+if [ "${1:-}" = "--restore" ]; then
+    img="$DEFAULT"
+    [ -f "$CONF" ] && img="$(head -n1 "$CONF")"
+    apply "$img"
+    exit $?
+fi
+
+if [ -n "${1:-}" ] && [ -f "$1" ]; then
+    apply "$1"
+    exit $?
+fi
+
+start="$HOME/Pictures"
+[ -d "$start" ] || start="$HOME"
+img="$(zenity --file-selection --title="Choose a wallpaper" \
+    --filename="$start/" \
+    --file-filter="Images | *.png *.jpg *.jpeg *.webp *.bmp *.svg" \
+    --file-filter="All files | *" 2>/dev/null)" || exit 0
+if ! apply "$img"; then
+    zenity --error --title="Wallpaper" --text="Could not apply the wallpaper." 2>/dev/null
+    exit 1
+fi
+zenity --info --title="Wallpaper" --timeout=3 \
+    --text="Wallpaper updated on every screen." 2>/dev/null || true

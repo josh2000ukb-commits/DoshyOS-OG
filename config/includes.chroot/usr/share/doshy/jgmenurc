@@ -1,0 +1,71 @@
+# doshy OS start menu (jgmenu) - pops up above the bottom-left of the taskbar
+
+stay_alive           = 0
+hide_on_startup      = 0
+csv_cmd              = /usr/share/doshy/menu.sh
+tint2_look           = 0
+position_mode        = fixed
+edge_snap_x          = 30
+terminal_exec        = xfce4-terminal
+terminal_args        = -e
+
+menu_margin_x        = 0
+menu_margin_y        = 42
+menu_width           = 300
+menu_height_min      = 0
+menu_height_max      = 0
+menu_padding_top     = 10
+menu_padding_right   = 8
+menu_padding_bottom  = 10
+menu_padding_left    = 8
+menu_radius          = 0
+menu_border          = 1
+menu_halign          = left
+menu_valign          = bottom
+
+sub_spacing          = 1
+sub_padding_top      = 10
+sub_padding_right    = 8
+sub_padding_bottom   = 10
+sub_padding_left     = 8
+sub_hover_action     = 1
+
+item_margin_x        = 3
+item_margin_y        = 3
+item_height          = 36
+item_padding_x       = 10
+item_radius          = 4
+item_border          = 0
+item_halign          = left
+
+sep_height           = 5
+sep_halign           = left
+sep_markup           =
+
+font                 = DejaVu Sans 10
+font_fallback        = xtg
+icon_size            = 24
+icon_text_spacing    = 12
+icon_theme           = Papirus-Dark
+icon_theme_fallback  = Adwaita
+arrow_string         = ▸
+arrow_width          = 15
+
+color_menu_bg        = #202020 96
+color_menu_border    = #4cc2ff 60
+color_norm_bg        = #000000 0
+color_norm_fg        = #ffffff 100
+color_sel_bg         = #ffffff 18
+color_sel_fg         = #ffffff 100
+color_sel_border     = #ffffff 0
+color_sep_fg         = #ffffff 25
+color_scroll_ind     = #4cc2ff 100
+color_title_fg       = #ffffff 100
+color_title_bg       = #000000 0
+color_title_border   = #000000 0
+
+csv_name_format      = %n
+csv_single_window    = 0
+csv_no_dirs          = 1
+csv_i18n             =
+csv_no_duplicates    = 0

@@ -1,0 +1,151 @@
+#!/bin/sh
+# doshy OS - root half of the Users setting. Called via sudo/pkexec by doshy-users.
+#   doshy-users-helper add    USER "FULL NAME" standard|admin PASSWORD_FILE
+#   doshy-users-helper edit   OLDUSER NEWUSER "FULL NAME" standard|admin PASSWORD_FILE_OR_-
+#   doshy-users-helper passwd USER PASSWORD_FILE
+#   doshy-users-helper remove USER
+# PASSWORD_FILE contains one line "USER:PASSWORD" and is destroyed after use.
+# For edit, pass "-" as PASSWORD_FILE to leave the password unchanged.
+set -eu
+
+[ "$(id -u)" -eq 0 ] || { echo "must run as root" >&2; exit 1; }
+
+valid_name() { printf '%s' "$1" | grep -Eq '^[a-z_][a-z0-9_-]{0,31}$'; }
+wipe() { [ -n "${1:-}" ] && [ "$1" != "-" ] && [ -f "$1" ] && { shred -u "$1" 2>/dev/null || rm -f "$1"; }; }
+
+is_admin() { id -nG "$1" 2>/dev/null | tr ' ' '\n' | grep -qx sudo; }
+
+admin_count() {
+    n=0
+    awk -F: '$3 >= 1000 && $3 < 65534 && $7 !~ /(nologin|false)$/ { print $1 }' /etc/passwd | while read -r u; do
+        is_admin "$u" && echo x
+    done | wc -l
+}
+
+set_type() {
+    user="$1"; type="$2"
+    if [ "$type" = "admin" ]; then
+        usermod -aG sudo "$user"
+    else
+        if is_admin "$user" && [ "$(admin_count)" -le 1 ]; then
+            echo "cannot remove the last administrator" >&2
+            exit 6
+        fi
+        gpasswd -d "$user" sudo >/dev/null 2>&1 || true
+    fi
+}
+
+extra_groups() {
+    user="$1"
+    for g in audio video plugdev netdev cdrom dip users lpadmin scanner bluetooth; do
+        if getent group "$g" >/dev/null 2>&1; then
+            usermod -aG "$g" "$user"
+        fi
+    done
+    return 0
+}
+
+# Validate credentials before making any account changes. Preserve colons in passwords.
+read_password() {
+    [ -f "$pwfile" ] && [ ! -L "$pwfile" ] || { echo "invalid password file" >&2; exit 2; }
+    [ "$(awk 'END { print NR }' "$pwfile")" = 1 ] || { echo "expected one password record" >&2; exit 2; }
+    record="$(cat "$pwfile")"
+    [ "${record%%:*}" = "$1" ] && [ "$record" != "${record#*:}" ] || {
+        echo "password record does not match the account" >&2; exit 2;
+    }
+    pw="${record#*:}"
+    [ -n "$pw" ] || { echo "password must not be empty" >&2; exit 2; }
+}
+
+action="${1:-}"; shift || true
+case "$action" in
+    add)
+        user="$1"; full="$2"; type="$3"; pwfile="$4"
+        valid_name "$user" || { wipe "$pwfile"; echo "invalid username" >&2; exit 2; }
+        if getent passwd "$user" >/dev/null; then wipe "$pwfile"; echo "user already exists" >&2; exit 3; fi
+        case "$type" in admin|standard) ;; *) echo "invalid account type" >&2; exit 2 ;; esac
+        read_password "$user"
+        adduser --disabled-password --gecos "$full,,," --quiet "$user"
+        printf '%s:%s\n' "$user" "$pw" | chpasswd
+        wipe "$pwfile"
+        extra_groups "$user"
+        [ "$type" = "admin" ] && usermod -aG sudo "$user"
+        echo "added $user"
+        ;;
+    edit)
+        old="$1"; new="$2"; full="$3"; type="$4"; pwfile="$5"
+        valid_name "$old" || { wipe "$pwfile"; echo "invalid username" >&2; exit 2; }
+        valid_name "$new" || { wipe "$pwfile"; echo "invalid username" >&2; exit 2; }
+        getent passwd "$old" >/dev/null || { wipe "$pwfile"; echo "user not found" >&2; exit 5; }
+        uid="$(id -u "$old")"
+        [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ] || { wipe "$pwfile"; echo "refusing to edit a system account" >&2; exit 4; }
+
+        case "$type" in admin|standard) ;; *) echo "invalid account type" >&2; exit 2 ;; esac
+        if [ "$type" = standard ] && is_admin "$old" && [ "$(admin_count)" -le 1 ]; then
+            echo "cannot remove the last administrator" >&2
+            exit 6
+        fi
+        if [ "$new" != "$old" ] && pgrep -u "$uid" >/dev/null 2>&1; then
+            echo "log out of the account before renaming it" >&2
+            exit 4
+        fi
+
+        if [ "$pwfile" != "-" ]; then read_password "$new"; fi
+        if [ "$new" != "$old" ]; then
+            if getent passwd "$new" >/dev/null; then
+                wipe "$pwfile"
+                echo "a user called $new already exists" >&2
+                exit 3
+            fi
+            usermod -l "$new" "$old"
+            # Rename the matching private group if adduser created one
+            if getent group "$old" >/dev/null 2>&1; then
+                groupmod -n "$new" "$old" 2>/dev/null || true
+            fi
+            oldhome="$(getent passwd "$new" | cut -d: -f6)"
+            newhome="/home/$new"
+            if [ -d "$oldhome" ] && [ "$oldhome" != "$newhome" ]; then
+                usermod -d "$newhome" -m "$new"
+            fi
+            rm -f "/var/lib/AccountsService/users/$old"
+        fi
+
+        user="$new"
+        usermod -c "$full,,," "$user"
+        extra_groups "$user"
+        set_type "$user" "$type"
+
+        if [ -n "$pwfile" ] && [ "$pwfile" != "-" ] && [ -f "$pwfile" ]; then
+            # chpasswd line must use the (possibly new) username
+            printf '%s:%s\n' "$user" "$pw" | chpasswd
+            wipe "$pwfile"
+        fi
+        echo "edited $old -> $user"
+        ;;
+    passwd)
+        user="$1"; pwfile="$2"
+        valid_name "$user" || { wipe "$pwfile"; exit 2; }
+        read_password "$user"
+        printf '%s:%s\n' "$user" "$pw" | chpasswd
+        wipe "$pwfile"
+        echo "password changed for $user"
+        ;;
+    remove)
+        user="$1"
+        valid_name "$user" || exit 2
+        uid="$(id -u "$user")"
+        [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ] || { echo "refusing to remove a system account" >&2; exit 4; }
+        if is_admin "$user" && [ "$(admin_count)" -le 1 ]; then
+            echo "cannot remove the last administrator" >&2
+            exit 6
+        fi
+        pkill -KILL -u "$user" 2>/dev/null || true
+        deluser --remove-home --quiet "$user"
+        rm -f "/var/lib/AccountsService/users/$user"
+        echo "removed $user"
+        ;;
+    *)
+        echo "usage: $0 add|edit|passwd|remove ..." >&2
+        exit 1
+        ;;
+esac

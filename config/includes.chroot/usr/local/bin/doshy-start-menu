@@ -1,0 +1,8 @@
+#!/bin/sh
+# Opens the Start menu (bottom-left, above the taskbar).
+# If a menu is already open, clicking Start again just closes it.
+if pgrep -u "$(id -u)" -x jgmenu >/dev/null 2>&1; then
+    pkill -u "$(id -u)" -x jgmenu
+    exit 0
+fi
+exec jgmenu --config-file=/usr/share/doshy/jgmenurc

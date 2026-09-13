@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Start
+Comment=Open the Start menu
+Exec=doshy-start-menu
+Icon=/usr/share/doshy/logo.png
+Terminal=false
+NoDisplay=true

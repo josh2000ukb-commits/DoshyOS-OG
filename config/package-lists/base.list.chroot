@@ -1,0 +1,75 @@
+# Core system
+python3
+sudo
+adduser
+passwd
+accountsservice
+shared-mime-info
+locales
+console-setup
+keyboard-configuration
+bash-completion
+systemd-timesyncd
+dbus
+dbus-x11
+policykit-1
+policykit-1-gnome
+
+# Networking (NetworkManager + tray applet for Wi-Fi)
+network-manager
+network-manager-gnome
+wpasupplicant
+wireless-tools
+ca-certificates
+
+# Audio
+pulseaudio
+pulseaudio-utils
+alsa-utils
+volumeicon-alsa
+
+# Libraries Discord needs (its .deb is installed by a build hook)
+libasound2
+libatomic1
+libc++1
+libgbm1
+libgtk-3-0
+libnotify4
+libnspr4
+libnss3
+libxss1
+libxtst6
+libayatana-appindicator3-1
+libdbusmenu-gtk3-4
+xdg-desktop-portal
+xdg-desktop-portal-gtk
+
+# Hardware support
+firmware-linux
+firmware-misc-nonfree
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+firmware-brcm80211
+firmware-amd-graphics
+intel-microcode
+amd64-microcode
+pciutils
+usbutils
+
+# Filesystems (so drives / USB sticks work)
+dosfstools
+e2fsprogs
+ntfs-3g
+exfatprogs
+
+# Handy command-line tools for the terminal
+nano
+less
+curl
+wget
+git
+htop
+unzip
+zip
+man-db

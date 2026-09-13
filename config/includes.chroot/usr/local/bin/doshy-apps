@@ -1,0 +1,25 @@
+#!/bin/sh
+# doshy OS - Applications list. Shows every installed GUI program (including
+# ones you added by installing a .deb) and launches the one you pick.
+#   doshy-apps          searchable window
+#   doshy-apps --menu   open as the Start-menu Applications submenu
+set -u
+
+if [ "${1:-}" = "--menu" ]; then
+    exec jgmenu --simple --config-file=/usr/share/doshy/jgmenurc \
+        --csv-cmd='/usr/share/doshy/apps.sh'
+fi
+
+rows="$(/usr/share/doshy/apps.sh --rows)"
+[ -n "$rows" ] || {
+    zenity --info --title="Applications" --text="No applications found." 2>/dev/null
+    exit 0
+}
+
+# Return the hidden command column so duplicate app names launch the right entry.
+cmd="$(printf '%s\n' "$rows" | zenity --list --title="Applications" \
+    --text="Installed programs. New .deb packages you install appear here." \
+    --column="Application" --column="Command" --hide-column=2 \
+    --print-column=2 --width=420 --height=520 2>/dev/null)" || exit 0
+[ -n "$cmd" ] || exit 0
+exec sh -c "$cmd"

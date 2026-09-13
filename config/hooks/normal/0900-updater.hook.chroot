@@ -1,0 +1,5 @@
+#!/bin/sh
+# Record the shipped files after all build-time changes, before first boot.
+set -eu
+python3 -I /usr/local/lib/doshy/update_core.py seed
+systemctl enable doshy-update-recovery.service

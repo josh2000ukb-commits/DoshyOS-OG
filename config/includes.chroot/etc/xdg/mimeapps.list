@@ -1,0 +1,9 @@
+[Default Applications]
+application/vnd.debian.binary-package=doshy-install-deb.desktop
+application/x-deb=doshy-install-deb.desktop
+application/x-debian-package=doshy-install-deb.desktop
+inode/directory=thunar.desktop
+text/html=firefox-esr.desktop
+x-scheme-handler/http=firefox-esr.desktop
+x-scheme-handler/https=firefox-esr.desktop
+x-scheme-handler/discord=discord.desktop

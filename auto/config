@@ -1,0 +1,40 @@
+#!/bin/sh
+# live-build configuration for doshy OS.
+# Run via `lb config` (live-build picks this file up automatically).
+set -e
+
+OS_NAME="${OS_NAME:-doshy OS}"
+# Short id used for the hostname and the ISO file name ("doshy OS" -> "doshyos")
+OS_ID="$(printf '%s' "$OS_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')"
+
+# Locale / keyboard used on the live system. Change these if you are not in the US.
+LIVE_LOCALE="${LIVE_LOCALE:-en_US.UTF-8}"
+LIVE_KEYBOARD="${LIVE_KEYBOARD:-us}"
+LIVE_TIMEZONE="${LIVE_TIMEZONE:-Etc/UTC}"
+
+# Boot options:
+#   persistence  - when run from a USB/external drive that has a partition labelled
+#                  "persistence" (Rufus creates this for you), all changes and files
+#                  are saved on the drive between reboots. Without such a partition
+#                  the system just runs as a normal live session.
+#   username=doshy  the built-in account (password "live"); more users can be added
+#                  in Settings -> Users. The boot menu entries add "noautologin" so the
+#                  login screen is shown (see config/bootloaders/).
+lb config noauto \
+    --architectures amd64 \
+    --distribution bookworm \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --binary-images iso-hybrid \
+    --bootloaders "syslinux,grub-efi" \
+    --debian-installer none \
+    --apt-indices false \
+    --apt-recommends true \
+    --memtest none \
+    --firmware-chroot true \
+    --iso-volume "$OS_NAME" \
+    --iso-application "$OS_NAME" \
+    --iso-publisher "$OS_NAME" \
+    --iso-preparer "$OS_NAME live-build" \
+    --image-name "$OS_ID" \
+    --bootappend-live "boot=live components quiet persistence username=doshy user-default-groups=audio,cdrom,dip,floppy,video,plugdev,netdev,powerdev,scanner,bluetooth,lpadmin,sudo hostname=$OS_ID locales=$LIVE_LOCALE keyboard-layouts=$LIVE_KEYBOARD timezone=$LIVE_TIMEZONE" \
+    "${@}"

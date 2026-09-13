@@ -1,0 +1,39 @@
+#!/bin/sh
+# doshy OS - Settings hub. Shows the available settings and opens the chosen one.
+
+while :; do
+    choice="$(zenity --list --title="Settings" \
+        --text="doshy OS settings" \
+        --column="Setting" --column="What it does" --hide-header \
+        --width=560 --height=420 2>/dev/null <<'EOF'
+Keyboard language
+Choose the language / layout of your keyboard
+Display and monitors
+Resolution, multiple monitors, screen arrangement
+Wallpaper
+Change the desktop background (full image on every screen)
+Sound
+Volume, input and output devices
+Network
+Wi-Fi and wired connections
+Users
+Add or edit users (administrators: username, password, account type)
+System updates
+Update doshy OS from GitHub without wiping your drive
+Install a package (.deb)
+Install a downloaded .deb file; it appears under Start → Applications
+EOF
+)" || exit 0
+
+    case "$choice" in
+        "Keyboard language")        doshy-keyboard ;;
+        "Display and monitors")     doshy-display ;;
+        "Wallpaper")                doshy-wallpaper ;;
+        "Sound")                    pavucontrol ;;
+        "Network")                  nm-connection-editor ;;
+        "System updates")          doshy-update ;;
+        "Users")                    doshy-users ;;
+        "Install a package (.deb)") doshy-install-deb ;;
+        *)                          exit 0 ;;
+    esac
+done

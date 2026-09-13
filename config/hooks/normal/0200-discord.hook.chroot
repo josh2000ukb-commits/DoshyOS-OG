@@ -1,0 +1,26 @@
+#!/bin/sh
+# Downloads the official Discord .deb from discord.com and installs it into the image.
+set -e
+
+URL="https://discord.com/api/download?platform=linux&format=deb"
+DEB=/tmp/discord.deb
+
+echo "==> Downloading Discord"
+for attempt in 1 2 3; do
+    if curl -fsSL --retry 3 -o "$DEB" "$URL"; then
+        break
+    fi
+    echo "download attempt $attempt failed, retrying..."
+    sleep 5
+done
+[ -s "$DEB" ] || { echo "ERROR: could not download Discord" >&2; exit 1; }
+
+echo "==> Installing Discord"
+export DEBIAN_FRONTEND=noninteractive
+apt-get install -y --no-install-recommends "$DEB"
+rm -f "$DEB"
+
+# Discord refuses to start when it thinks it is outdated; the per-user settings
+# in /etc/skel/.config/discord/settings.json turn that check off.
+discord_version="$(dpkg-query -W -f='${Version}' discord 2>/dev/null || echo unknown)"
+echo "==> Discord $discord_version installed"

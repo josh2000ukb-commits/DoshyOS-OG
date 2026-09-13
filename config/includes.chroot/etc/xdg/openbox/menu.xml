@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+
+<menu id="root-menu" label="doshy OS">
+  <item label="Files">
+    <action name="Execute"><execute>thunar</execute></action>
+  </item>
+  <item label="Terminal">
+    <action name="Execute"><execute>xfce4-terminal</execute></action>
+  </item>
+  <item label="Firefox">
+    <action name="Execute"><execute>firefox-esr</execute></action>
+  </item>
+  <item label="Discord">
+    <action name="Execute"><execute>discord</execute></action>
+  </item>
+  <item label="Applications">
+    <action name="Execute"><execute>doshy-apps</execute></action>
+  </item>
+  <separator />
+  <item label="Change wallpaper">
+    <action name="Execute"><execute>doshy-wallpaper</execute></action>
+  </item>
+  <item label="Display and monitors">
+    <action name="Execute"><execute>doshy-display</execute></action>
+  </item>
+  <item label="Settings">
+    <action name="Execute"><execute>doshy-settings</execute></action>
+  </item>
+  <separator />
+  <item label="Switch user">
+    <action name="Execute"><execute>dm-tool switch-to-greeter</execute></action>
+  </item>
+  <item label="Log out">
+    <action name="Exit"><prompt>yes</prompt></action>
+  </item>
+  <item label="Restart">
+    <action name="Execute"><execute>systemctl reboot</execute></action>
+  </item>
+  <item label="Shut down">
+    <action name="Execute"><execute>systemctl poweroff</execute></action>
+  </item>
+</menu>
+
+</openbox_menu>

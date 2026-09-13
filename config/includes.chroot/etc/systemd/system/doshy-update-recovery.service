@@ -1,0 +1,12 @@
+[Unit]
+Description=Recover an interrupted doshy OS file update
+After=local-fs.target
+Before=display-manager.service
+ConditionPathExists=/var/lib/doshy-update/pending.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/doshy-update-helper recover
+
+[Install]
+WantedBy=multi-user.target

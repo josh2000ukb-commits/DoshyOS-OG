@@ -1,0 +1,4 @@
+# Graphical installer, so the live system can be installed onto an internal drive
+# (Start menu -> "Install doshy OS to a drive")
+calamares
+calamares-settings-debian

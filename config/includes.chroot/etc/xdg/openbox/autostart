@@ -1,0 +1,26 @@
+#!/bin/sh
+# doshy OS desktop autostart (run by openbox-session for every user).
+
+# Keyboard language chosen in Settings (if any)
+doshy-keyboard --restore
+
+# Wallpaper: one full image on EACH screen (not one picture stretched across both)
+doshy-wallpaper --restore &
+# Screens that appear a moment after login (HDMI) get the wallpaper too
+( sleep 3; doshy-wallpaper --restore ) &
+
+# Bottom bar (start button, running apps, tray, clock)
+tint2 &
+
+# Tray applets: Wi-Fi/network, volume
+nm-applet &
+volumeicon &
+
+# Lets graphical programs ask for admin permission when needed (mounting drives, etc.)
+/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+
+# Create ~/Downloads, ~/Documents etc. for Files and Firefox
+xdg-user-dirs-update &
+
+# Check once a day at login; installation waits for the user to choose it.
+( sleep 30; doshy-update --notify ) &

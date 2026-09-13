@@ -1,0 +1,59 @@
+#!/bin/sh
+# doshy OS - Keyboard language setting.
+#   doshy-keyboard            open the chooser
+#   doshy-keyboard --restore  re-apply the saved layout (run at login)
+
+CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/doshy"
+CONF="$CONF_DIR/keyboard"
+LST=/usr/share/X11/xkb/rules/evdev.lst
+
+apply() {
+    # $1 = layout code (e.g. gb), $2 = optional variant
+    if [ -n "$2" ]; then
+        setxkbmap -layout "$1" -variant "$2"
+    else
+        setxkbmap -layout "$1" -variant "" -option ""
+    fi
+}
+
+if [ "${1:-}" = "--restore" ]; then
+    if [ -f "$CONF" ]; then
+        # shellcheck disable=SC1090
+        . "$CONF"
+        [ -n "${LAYOUT:-}" ] && apply "$LAYOUT" "${VARIANT:-}"
+    fi
+    exit 0
+fi
+
+current="$(setxkbmap -query 2>/dev/null | awk '/^layout/ {print $2}')"
+[ -n "$current" ] || current="unknown"
+
+# Build "code<newline>Language name" pairs from the X keyboard database
+list="$(awk '
+    /^! layout/ { in_layout = 1; next }
+    /^!/        { in_layout = 0 }
+    in_layout && NF {
+        code = $1; $1 = ""; sub(/^ +/, "");
+        print code; print $0
+    }' "$LST")"
+
+choice="$(printf '%s\n' "$list" | zenity --list \
+    --title="Keyboard language" \
+    --text="Current keyboard language: <b>$current</b>\nChoose the language / layout for your keyboard:" \
+    --column="Code" --column="Language" \
+    --print-column=1 --hide-header \
+    --width=460 --height=560 2>/dev/null)" || exit 0
+[ -n "$choice" ] || exit 0
+
+if apply "$choice" ""; then
+    mkdir -p "$CONF_DIR"
+    printf 'LAYOUT=%s\nVARIANT=\n' "$choice" > "$CONF"
+    # Also make it the system default (login screen, new users). Works without a
+    # password on the live system; silently skipped otherwise.
+    sudo -n localectl set-x11-keymap "$choice" >/dev/null 2>&1 || true
+    name="$(printf '%s\n' "$list" | awk -v c="$choice" '$0 == c { getline; print; exit }')"
+    zenity --info --title="Keyboard language" --timeout=4 \
+        --text="Keyboard language set to: <b>$name</b> ($choice)" 2>/dev/null
+else
+    zenity --error --title="Keyboard language" --text="Could not apply the layout '$choice'." 2>/dev/null
+fi

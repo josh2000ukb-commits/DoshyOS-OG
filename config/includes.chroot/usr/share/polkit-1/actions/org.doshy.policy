@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/software/polkit/policyconfig.dtd">
+<policyconfig>
+  <vendor>doshy OS</vendor>
+  <vendor_url>file:///usr/share/doshy</vendor_url>
+
+  <action id="org.doshy.users-helper">
+    <description>Manage user accounts</description>
+    <message>An administrator password is required to add or remove users, or to change a password.</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/bin/doshy-users-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+  <action id="org.doshy.update-helper">
+    <description>Update doshy OS</description>
+    <message>An administrator password is required to update doshy OS or change its trusted GitHub source.</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/bin/doshy-update-helper</annotate>
+  </action>
+</policyconfig>

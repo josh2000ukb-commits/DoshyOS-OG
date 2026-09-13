@@ -1,0 +1,50 @@
+name: Build doshy OS ISO
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      contents: read
+    name: Build ISO
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: debian:bookworm
+      options: --privileged
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Build the ISO
+        run: bash build.sh
+        env:
+          OS_NAME: doshy OS
+          LIVE_LOCALE: en_US.UTF-8
+          LIVE_KEYBOARD: us
+          LIVE_TIMEZONE: Etc/UTC
+
+      - name: Show result
+        run: ls -lh out/
+
+      - name: Upload ISO (download it from the Actions run page)
+        uses: actions/upload-artifact@v4
+        with:
+          name: doshy-os-iso
+          path: out/*.iso
+          compression-level: 0
+          retention-days: 14
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            out/build.log
+            build.log
+          if-no-files-found: ignore

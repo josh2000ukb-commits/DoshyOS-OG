@@ -1,0 +1,9 @@
+#!/bin/sh
+# Launches the graphical installer (Calamares) to install doshy OS onto a drive.
+if ! command -v calamares >/dev/null 2>&1; then
+    zenity --error --title="doshy OS" --text="The installer is not available on this system." 2>/dev/null
+    exit 1
+fi
+
+# The live user has passwordless sudo (set up by live-config).
+exec sudo -E calamares

@@ -1,0 +1,56 @@
+#!/bin/sh
+# Runs inside the image while it is being built.
+set -e
+
+# Make sure our scripts are executable (file modes can be lost when the
+# project lives on a Windows drive).
+chmod 755 /usr/local/bin/doshy-* /usr/local/lib/doshy/login-setup \
+          /usr/share/doshy/menu.sh /usr/share/doshy/apps.sh /etc/xdg/openbox/autostart
+chmod 644 /usr/share/doshy/start-menu.desktop /usr/share/doshy/jgmenurc /usr/share/doshy/logo.png \
+          /usr/share/backgrounds/doshy.png \
+          /usr/share/applications/doshy-install-deb.desktop /etc/xdg/mimeapps.list /etc/xdg/Thunar/uca.xml \
+          /etc/xdg/tint2/tint2rc /etc/xdg/openbox/rc.xml /etc/xdg/openbox/menu.xml \
+          /etc/lightdm/lightdm.conf.d/50-doshy.conf /etc/lightdm/lightdm-gtk-greeter.conf \
+          /etc/gtk-3.0/settings.ini /etc/gtk-2.0/gtkrc /etc/xdg/xfce4/terminal/terminalrc \
+          /usr/share/polkit-1/actions/org.doshy.policy \
+          /etc/systemd/system/doshy-login-setup.service
+
+# Register the .deb installer as the default handler for package files
+update-desktop-database /usr/share/applications || true
+update-mime-database /usr/share/mime || true
+find /etc/skel/.config -type d -exec chmod 755 {} +
+find /etc/skel/.config -type f -exec chmod 644 {} +
+
+# Brand the system as doshy OS (shown in the terminal, installer, etc.)
+if [ -f /etc/os-release ]; then
+    sed -i 's/^PRETTY_NAME=.*/PRETTY_NAME="doshy OS (based on Debian 12)"/' /etc/os-release
+    sed -i 's/^NAME=.*/NAME="doshy OS"/' /etc/os-release
+fi
+printf 'doshy OS \\n \\l\n\n' > /etc/issue
+
+# Default Firefox settings: don't nag about being the default browser
+mkdir -p /usr/lib/firefox-esr/distribution
+cat > /usr/lib/firefox-esr/distribution/policies.json <<'EOF'
+{
+  "policies": {
+    "DontCheckDefaultBrowser": true,
+    "DisableTelemetry": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": ""
+  }
+}
+EOF
+
+# Hide entries from Start -> Applications that we already show elsewhere or that
+# would confuse a Windows user (installer, helper tools)
+for f in install-debian calamares thunar-settings thunar-bulk-rename thunar-volman-settings \
+         xfce4-terminal-settings nm-connection-editor arandr nitrogen pavucontrol zenity; do
+    if [ -f "/usr/share/applications/$f.desktop" ] && ! grep -q '^NoDisplay=true' "/usr/share/applications/$f.desktop"; then
+        printf 'NoDisplay=true\n' >> "/usr/share/applications/$f.desktop"
+    fi
+done
+
+# Make the graphical login start automatically
+systemctl enable lightdm || true
+systemctl enable NetworkManager || true
+systemctl enable doshy-login-setup.service || true

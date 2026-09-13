@@ -1,0 +1,3 @@
+# Everything here ends up inside a Linux image - always use LF line endings.
+* text=auto eol=lf
+*.png binary

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Install package
+Comment=Install a downloaded .deb package and add it to Start → Applications
+Exec=doshy-install-deb %f
+Icon=system-software-install
+Terminal=false
+NoDisplay=true
+MimeType=application/vnd.debian.binary-package;application/x-deb;application/x-debian-package;
+Categories=System;

@@ -1,0 +1,46 @@
+#!/bin/sh
+# Runs at boot (before the login screen), live USB only.
+#   * turns off automatic login so the user list is shown (default boot entries)
+#   * gives the built-in live account a password if it still has none
+# Persistence keeps extra users and password changes you make in Settings -> Users.
+# On an installed copy Calamares owns the login settings; we do not touch them.
+set -eu
+
+[ -d /run/live/medium ] || exit 0
+
+# live-config writes autologin-user=... into the main LightDM config; strip it.
+if [ -f /etc/lightdm/lightdm.conf ]; then
+    sed -i \
+        -e 's/^autologin-user=.*/# autologin disabled by doshy OS/' \
+        -e 's/^autologin-user-timeout=.*/# autologin disabled by doshy OS/' \
+        /etc/lightdm/lightdm.conf
+fi
+
+# First boot (or a user with a blank password): set the well-known password "live"
+# so the login screen is actually usable. Do not overwrite a password the user set.
+for u in doshy user; do
+    getent passwd "$u" >/dev/null 2>&1 || continue
+    state="$(passwd -S "$u" 2>/dev/null | awk '{print $2}')"
+    case "$state" in
+        NP)
+            printf '%s:live\n' "$u" | chpasswd
+            passwd -u "$u" >/dev/null 2>&1 || true
+            ;;
+    esac
+done
+
+# Advanced boot entry omits "noautologin" and should skip the login screen.
+if [ -r /proc/cmdline ] && ! grep -qw noautologin /proc/cmdline; then
+    liveuser="$(tr ' ' '\n' < /proc/cmdline | sed -n 's/^username=//p' | head -n1)"
+    [ -n "$liveuser" ] || liveuser=doshy
+    if getent passwd "$liveuser" >/dev/null 2>&1; then
+        cat > /etc/lightdm/lightdm.conf.d/99-autologin.conf <<EOF
+[Seat:*]
+autologin-user=$liveuser
+autologin-user-timeout=0
+EOF
+        exit 0
+    fi
+fi
+rm -f /etc/lightdm/lightdm.conf.d/99-autologin.conf
+

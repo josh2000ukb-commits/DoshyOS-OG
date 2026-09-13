@@ -1,0 +1,5 @@
+# Additional Debian packages required by published doshy OS updates.
+# Keep previous entries: updates are cumulative and users can skip releases.
+# Do not put kernel, bootloader or distribution-upgrade packages here.
+python3
+libglib2.0-bin

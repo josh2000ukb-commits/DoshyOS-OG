@@ -1,0 +1,24 @@
+# live-build output / state
+out/
+build.log
+.build/
+cache/
+chroot/
+chroot.packages.*
+binary/
+binary.*
+/local/
+*.iso
+*.iso.*
+*.packages
+*.contents
+*.zsync
+config/binary
+config/bootstrap
+config/chroot
+config/common
+config/source
+config/build
+
+__pycache__/
+*.pyc

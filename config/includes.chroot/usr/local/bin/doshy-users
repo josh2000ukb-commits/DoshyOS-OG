@@ -1,0 +1,215 @@
+#!/bin/sh
+# doshy OS - Settings -> Users.
+# Administrators can add users and edit username, full name, password and type.
+# Standard users can only change their own password.
+set -u
+
+TITLE="Users"
+HELPER=/usr/local/bin/doshy-users-helper
+TAB="$(printf '\t')"
+ME="$(id -un)"
+
+as_root() {
+    if sudo -n true 2>/dev/null; then sudo -n "$@"; else pkexec "$@"; fi
+}
+
+is_admin() { id -nG "$1" 2>/dev/null | tr ' ' '\n' | grep -qx sudo; }
+
+# "user<TAB>Full name<TAB>Administrator/Standard"
+user_rows() {
+    awk -F: '$3 >= 1000 && $3 < 65534 && $7 !~ /(nologin|false)$/ {
+        split($5, g, ","); print $1 "\t" g[1]
+    }' /etc/passwd | while IFS="$TAB" read -r u f; do
+        if is_admin "$u"; then t="Administrator"; else t="Standard"; fi
+        printf '%s\t%s\t%s\n' "$u" "$f" "$t"
+    done
+}
+
+fullname_of() { getent passwd "$1" | awk -F: '{ split($5, g, ","); print g[1] }'; }
+type_of() { if is_admin "$1"; then echo Administrator; else echo Standard; fi; }
+
+choose_user() {
+    user_rows | awk -F"$TAB" '{print $1; print $2; print $3}' | zenity --list --title="$TITLE" --text="$1" \
+        --column="User" --column="Full name" --column="Type" --print-column=1 --width=480 --height=360 2>/dev/null
+}
+
+error() { zenity --error --title="$TITLE" --text="$1" --width=400 2>/dev/null; }
+info()  { zenity --info  --title="$TITLE" --text="$1" --width=400 2>/dev/null; }
+
+require_admin() {
+    if is_admin "$ME"; then return 0; fi
+    error "Only an <b>Administrator</b> can do that.\n\nAsk an administrator to change this, or log in with an administrator account (the built-in one is <b>doshy</b>)."
+    return 1
+}
+
+write_pwfile() {
+    f="$(mktemp /tmp/doshy-pw.XXXXXX)"
+    chmod 600 "$f"
+    printf '%s:%s\n' "$1" "$2" > "$f"
+    printf '%s' "$f"
+}
+
+valid_username() {
+    printf '%s' "$1" | grep -Eq '^[a-z_][a-z0-9_-]{0,31}$'
+}
+
+add_user() {
+    require_admin || return 0
+    out="$(zenity --forms --title="$TITLE — Add user" --separator="$TAB" \
+        --text="Create a new account. They will appear on the login screen." \
+        --add-entry="Username (lowercase, no spaces)" \
+        --add-entry="Full name" \
+        --add-password="Password" \
+        --add-password="Repeat password" \
+        --add-combo="Account type" --combo-values="Standard|Administrator (can install software and manage users)" \
+        2>/dev/null)" || return 0
+    user="$(printf '%s' "$out" | cut -f1)"
+    full="$(printf '%s' "$out" | cut -f2)"
+    pw1="$(printf '%s' "$out" | cut -f3)"
+    pw2="$(printf '%s' "$out" | cut -f4)"
+    type="$(printf '%s' "$out" | cut -f5)"
+
+    valid_username "$user" || { error "Username must be lowercase letters, digits, - or _ (no spaces), e.g. <b>anna</b>."; return 1; }
+    getent passwd "$user" >/dev/null && { error "A user called <b>$user</b> already exists."; return 1; }
+    [ -n "$pw1" ] || { error "Please choose a password."; return 1; }
+    [ "$pw1" = "$pw2" ] || { error "The two passwords do not match."; return 1; }
+    case "$type" in Administrator*) type=admin ;; *) type=standard ;; esac
+    [ -n "$full" ] || full="$user"
+
+    pwfile="$(write_pwfile "$user" "$pw1")"
+    if out="$(as_root "$HELPER" add "$user" "$full" "$type" "$pwfile" 2>&1)"; then
+        info "User <b>$user</b> was created.\n\nThey can log in from the login screen, or via Start → Switch user."
+    else
+        rm -f "$pwfile"
+        error "Could not create the user:\n$out"
+    fi
+}
+
+edit_user() {
+    require_admin || return 0
+    user="$(choose_user "Which user do you want to edit?")" || return 0
+    [ -n "$user" ] || return 0
+
+    cur_full="$(fullname_of "$user")"
+    cur_type="$(type_of "$user")"
+    if [ "$cur_type" = "Administrator" ]; then
+        combo="Administrator (can install software and manage users)|Standard"
+    else
+        combo="Standard|Administrator (can install software and manage users)"
+    fi
+
+    out="$(zenity --forms --title="$TITLE — Edit $user" --separator="$TAB" \
+        --text="Editing <b>$user</b>.\nFull name: ${cur_full:-—}    Type: $cur_type\n\nChange any field. Leave the password boxes <b>empty</b> to keep the current password.\nUsername must stay lowercase with no spaces." \
+        --add-entry="Username" \
+        --add-entry="Full name" \
+        --add-password="New password (optional)" \
+        --add-password="Repeat new password" \
+        --add-combo="Account type" --combo-values="$combo" \
+        2>/dev/null)" || return 0
+
+    new="$(printf '%s' "$out" | cut -f1)"
+    full="$(printf '%s' "$out" | cut -f2)"
+    pw1="$(printf '%s' "$out" | cut -f3)"
+    pw2="$(printf '%s' "$out" | cut -f4)"
+    type="$(printf '%s' "$out" | cut -f5)"
+
+    [ -n "$new" ]  || new="$user"
+    [ -n "$full" ] || full="$cur_full"
+    [ -n "$full" ] || full="$new"
+    valid_username "$new" || { error "Username must be lowercase letters, digits, - or _ (no spaces)."; return 1; }
+    if [ "$new" != "$user" ] && getent passwd "$new" >/dev/null; then
+        error "A user called <b>$new</b> already exists."
+        return 1
+    fi
+    if [ -n "$pw1" ] || [ -n "$pw2" ]; then
+        [ "$pw1" = "$pw2" ] || { error "The two passwords do not match."; return 1; }
+        [ -n "$pw1" ] || { error "Please enter a password, or leave both boxes empty."; return 1; }
+        pwfile="$(write_pwfile "$new" "$pw1")"
+    else
+        pwfile="-"
+    fi
+    case "${type:-$cur_type}" in Administrator*) type=admin ;; *) type=standard ;; esac
+
+    if [ "$new" != "$user" ] && [ "$user" = "$ME" ]; then
+        [ "$pwfile" != "-" ] && rm -f "$pwfile"
+        error "Log in as another administrator before renaming this account."
+        return 1
+    fi
+
+    if out="$(as_root "$HELPER" edit "$user" "$new" "$full" "$type" "$pwfile" 2>&1)"; then
+        msg="Saved changes for <b>$new</b>."
+        [ "$new" != "$user" ] && msg="$msg\n\nUsername is now <b>$new</b>. They log in with that name."
+        [ "$pwfile" != "-" ] && msg="$msg\nPassword was updated."
+        info "$msg"
+    else
+        [ "$pwfile" != "-" ] && rm -f "$pwfile"
+        error "Could not save the changes:\n$out"
+    fi
+}
+
+change_own_password() {
+    # passwd authenticates the current user directly; standard users need no admin.
+    if ! is_admin "$ME"; then
+        xfce4-terminal --disable-server --title="Change password" --execute passwd
+        return
+    fi
+    out="$(zenity --forms --title="$TITLE — Change password" --separator="$TAB" \
+        --text="New password for <b>$ME</b>" \
+        --add-password="New password" --add-password="Repeat password" 2>/dev/null)" || return 0
+    pw1="$(printf '%s' "$out" | cut -f1)"; pw2="$(printf '%s' "$out" | cut -f2)"
+    [ -n "$pw1" ] || { error "Please enter a password."; return 1; }
+    [ "$pw1" = "$pw2" ] || { error "The two passwords do not match."; return 1; }
+    pwfile="$(write_pwfile "$ME" "$pw1")"
+    if out="$(as_root "$HELPER" passwd "$ME" "$pwfile" 2>&1)"; then
+        info "Your password was changed."
+    else
+        rm -f "$pwfile"
+        error "Could not change the password:\n$out"
+    fi
+}
+
+remove_user() {
+    require_admin || return 0
+    user="$(choose_user "Which user do you want to remove?")" || return 0
+    [ -n "$user" ] || return 0
+    [ "$user" = "$ME" ] && { error "You cannot remove the account you are logged in with.\nLog in as another administrator first."; return 1; }
+    zenity --question --title="$TITLE" --ok-label="Remove" --cancel-label="Cancel" --width=400 \
+        --text="Remove user <b>$user</b>?\n\nTheir personal files in /home/$user will be <b>deleted</b>. This cannot be undone." \
+        2>/dev/null || return 0
+    if out="$(as_root "$HELPER" remove "$user" 2>&1)"; then
+        info "User <b>$user</b> was removed."
+    else
+        error "Could not remove the user:\n$out"
+    fi
+}
+
+if is_admin "$ME"; then
+    intro="You are administrator <b>$ME</b>. You can add users and edit username, full name, password and account type."
+    buttons="Add user
+Edit user
+Remove user"
+else
+    intro="You are signed in as <b>$ME</b> (Standard).\nOnly an administrator can add or edit other users. You can change your own password."
+    buttons="Change my password"
+fi
+
+while :; do
+    rows="$(user_rows | awk -F"$TAB" '{print $1; print $2; print $3}')"
+    if is_admin "$ME"; then
+        set -- "--extra-button=Add user" "--extra-button=Edit user" "--extra-button=Remove user"
+    else
+        set -- "--extra-button=Change my password"
+    fi
+    choice="$(printf '%s\n' "$rows" | zenity --list --title="$TITLE" \
+        --text="$intro" \
+        --column="User" --column="Full name" --column="Type" --width=540 --height=400 \
+        "$@" \
+        --ok-label="Close" --cancel-label="Close" 2>/dev/null)"
+    case "$choice" in
+        "Add user")             add_user ;;
+        "Edit user")            edit_user ;;
+        "Remove user")          remove_user ;;
+        "Change my password")   change_own_password ;;
+        *)                      exit 0 ;;
+    esac
+done
