@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Graphics drivers
+Comment=Install and update graphics drivers for DoshyOS
+Exec=doshy-drivers
+Icon=video-display
+Terminal=false
+Categories=Settings;HardwareSettings;

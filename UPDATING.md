@@ -1,12 +1,27 @@
 # Updating doshy OS without wiping the drive
 
+## Version 1.0.2
+
+Use **Settings → System updates → Check for updates**, install 1.0.2, and restart.
+Then select the main monitor under **Display and monitors**; **Graphics drivers**
+is available in Settings and Applications. See the [1.0.2 release notes](updates/v1.0.2.md)
+for supported driver paths and recovery guidance. A supported Debian 12 amd64
+installation needs the existing updater baseline, and live USBs need full persistence.
+
+The graphics manager uses signed Debian 12 sources in a separate APT list cache;
+it does not replace the user's repository settings. Graphics installations require
+a reviewed package preview and administrator authentication, and do not remove
+packages or restart automatically. Driver package changes are not reverted by
+**Restore previous update**. Firmware updated on a live USB may not affect early
+boot because the live image's kernel/initramfs remains unchanged.
+
 The next combined OS image includes **Settings → System updates**. Once that version is installed, future desktop and system-tool updates can come from your own public GitHub repository. The updater does not format drives, rewrite partitions or replace home directories.
 
 The default update source is [josh2000ukb-commits/DoshyOS-OG](https://github.com/josh2000ukb-commits/DoshyOS-OG). It is included in the rebuilt image. You can change it later in System updates.
 
 ## Set up the OS once
 
-1. Use the configured public GitHub repository, including this project�s `.github` directory. Leave the generated ISO and `out/` files out of Git.
+1. Use the configured public GitHub repository, including this project's `.github` directory. Leave the generated ISO and `out/` files out of Git.
 2. On doshy OS, open **Settings → System updates → Set GitHub repository**.
 3. Enter `yourname/your-repository`, or its `https://github.com/...` URL, and authenticate as an administrator.
 4. Use **Check for updates** when a newer release is available.
@@ -78,10 +93,18 @@ Administrator authentication is required to install, restore or change the trust
 ## Testing and current status
 
 ```sh
-python3 -B -m unittest discover -s tests -p test_update.py -v
+python3 -B -m unittest discover -s tests -p 'test_*.py' -v
 bash tests/regressions.sh
 ```
 
-All 31 updater tests passed in Debian WSL, and the existing 18 shell regression checks passed. Tests cover the complete apply flow with mocked GitHub/APT, checksums, archive validation, persistence detection, file conflicts, interrupted-write recovery, rollback, concurrent-update locking and bundle generation. Python was installed in the WSL test environment to run the Linux-specific checks.
+Tests cover the complete apply flow with mocked GitHub/APT, checksums, archive
+validation, persistence detection, conflicts, interrupted-write recovery, rollback,
+locking and bundle generation. Display tests cover confirmed profile saves,
+restoration, main-screen placement, mirroring, swapping and rejected changes.
+Driver tests cover hardware recommendations, approved transactions and failure
+handling. Optional Xvfb/Openbox/Zenity tests exercise a real private X11 server;
+the release workflow installs these tools so those tests run before publication.
 
-A local `1.0.0` bundle was generated and validated. No ISO was rebuilt or modified, and no actual GitHub release was published. The old ISO does not yet contain this feature. The combined image still needs a disposable VM/USB test for the graphical dialogs, authentication, real persistence across reboot and a real release download once your repository exists.
+Physical multi-monitor behavior, actual GPU driver installation and persistence
+across a hardware reboot still require representative VM/USB/hardware testing;
+automated simulated-hardware checks do not establish universal compatibility.

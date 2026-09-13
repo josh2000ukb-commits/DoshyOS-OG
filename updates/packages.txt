@@ -3,3 +3,11 @@
 # Do not put kernel, bootloader or distribution-upgrade packages here.
 python3
 libglib2.0-bin
+# 1.0.2: monitor profiles and Debian graphics-driver detection
+pciutils
+nvidia-detect
+debian-archive-keyring
+x11-utils
+x11-xserver-utils
+zenity
+arandr

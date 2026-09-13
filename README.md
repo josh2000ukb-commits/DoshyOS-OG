@@ -10,7 +10,7 @@ A small Linux operating system (based on Debian 12) with a Windows-style desktop
   and added to Start → Applications.
 - **Login screen with multiple users**: pick your user at the login screen; add users, set passwords and admins in
   Settings → Users.
-- **Settings** in the Start menu: Keyboard language, Display and monitors (multi-monitor layout), Wallpaper, Sound,
+- **Settings** in the Start menu: Keyboard language, Display and monitors (saved layouts and main screen), Graphics drivers, Wallpaper, Sound,
   Network, Users, System updates, Install a package.
 - **Updates without wiping the drive**: System updates installs numbered releases from your public GitHub
   repository, keeping personal files and local settings. See [the setup and publishing guide](UPDATING.md).
@@ -53,7 +53,7 @@ On a Linux machine (Debian/Ubuntu) you can simply run `sudo ./build.sh`.
 1. Create a new repository on GitHub and push this folder to it (`git init`, `git add .`, `git commit`, `git push`).
 2. GitHub Actions runs `.github/workflows/build-iso.yml` automatically (about 30-40 minutes).
 3. Open the run under the **Actions** tab and download the `doshy-os-iso` artifact; unzip it to get the `.iso`.
-   Update tags such as `v1.0.1` publish a small in-place update instead; see [UPDATING.md](UPDATING.md).
+   Update tags such as `v1.0.2` publish a small in-place update instead; see [UPDATING.md](UPDATING.md).
 
 ## 2. Put it on your external drive
 
@@ -102,9 +102,14 @@ on the Users page to keep the boot-straight-to-desktop behaviour.
   **Start → Applications** or press `Win+A`.
 - **Settings → Keyboard language**: pick your keyboard's language (e.g. *English (UK)*). It applies immediately
   and is remembered.
-- **Settings → Display and monitors**: pick a simple arrangement (side by side, swap, mirror, or one screen
-  only). That replaces overlapping layouts and puts the wallpaper on each screen. *Advanced* still lets you
-  drag screens, then doshy OS tidies the cursor and wallpaper afterwards.
+- **Settings → Display and monitors**: choose the main screen for the bottom bar and new applications;
+  arrange monitors and choose resolution, refresh rate and rotation. Confirm within 20 seconds to save
+  the layout for future logins/reboots. *Advanced* supports dragging screens; its first Apply returns to
+  DoshyOS for confirmation. Each user and monitor combination has its own saved profile.
+- **Settings → Graphics drivers**: detect hardware and check/install signed Debian graphics packages.
+  Review the proposed changes before installing. Full persistence is required on live USBs; proprietary
+  NVIDIA and boot-kernel updates require a full installation. See [1.0.2 release notes](updates/v1.0.2.md)
+  for supported driver paths, Secure Boot limits and recovery information.
 - **Settings → Wallpaper**: pick an image; it is shown in full on **every** monitor (not stretched across both).
 - The built-in `doshy` account can use `sudo` without a password on the live USB. New Administrator users
   use their own password.

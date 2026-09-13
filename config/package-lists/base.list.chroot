@@ -55,6 +55,8 @@ firmware-amd-graphics
 intel-microcode
 amd64-microcode
 pciutils
+nvidia-detect
+debian-archive-keyring
 usbutils
 
 # Filesystems (so drives / USB sticks work)
