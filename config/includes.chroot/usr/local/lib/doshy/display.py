@@ -108,12 +108,27 @@ def normalize(layout):
     return layout
 
 
+def framebuffer(layout):
+    """Return the RandR framebuffer needed to contain every active output."""
+    right = bottom = 0
+    for output in layout:
+        if not output["mode"]:
+            continue
+        width, height = (int(value) for value in output["mode"].split("x"))
+        if output["rotation"] in ("left", "right"):
+            width, height = height, width
+        right = max(right, output["x"] + width)
+        bottom = max(bottom, output["y"] + height)
+    return right, bottom
+
+
 def command(layout, outputs):
     available = {o["name"]: o for o in outputs}
     if len(layout) != len(available) or {o["name"] for o in layout} != set(available):
         raise ValueError("Connected screens have changed. Open Display and monitors again.")
     layout = normalize(copy.deepcopy(layout))
-    args = ["xrandr"]
+    width, height = framebuffer(layout)
+    args = ["xrandr", "--fb", f"{width}x{height}"]
     for o in layout:
         args += ["--output", o["name"]]
         if o["mode"] is None:
@@ -127,7 +142,7 @@ def command(layout, outputs):
         if any(type(o[k]) is not int or not 0 <= o[k] <= 32767 for k in ("x", "y")):
             raise ValueError("Screen positions must be between 0 and 32767.")
         args += ["--mode", o["mode"], "--pos", f'{o["x"]}x{o["y"]}',
-                 "--rotate", o["rotation"], "--reflect", "normal", "--panning", "0x0", "--transform", "none"]
+                 "--rotate", o["rotation"]]
         if o["rate"]:
             args += ["--rate", o["rate"]]
         if o["primary"]:
@@ -138,21 +153,14 @@ def command(layout, outputs):
 def apply(layout):
     args = command(layout, query())
     run(args[:1] + ["--dryrun"] + args[1:])
-    try:
-        run(args)
-    except ValueError as error:
-        # Some virtual/older drivers do not implement the optional panning and
-        # transform requests. Retry the same layout without those requests only.
-        if not any(code in str(error) for code in ("RRSetPanning", "RRSetCrtcTransform")):
-            raise
-        plain, i = [], 0
-        while i < len(args):
-            if args[i] in ("--panning", "--transform"):
-                i += 2
-            else:
-                plain.append(args[i])
-                i += 1
-        run(plain)
+    # Clear old CRTCs first.  This makes a swap deterministic when the larger
+    # monitor changes sides and prevents stale framebuffer/mouse coordinates.
+    names = [output["name"] for output in query()]
+    off = ["xrandr"]
+    for name in names:
+        off += ["--output", name, "--off"]
+    run(off)
+    run(args)
 
 
 def save(outputs):
