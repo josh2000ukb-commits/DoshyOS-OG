@@ -10,6 +10,8 @@ Keyboard language
 Choose the language / layout of your keyboard
 Display and monitors
 Resolution, multiple monitors, screen arrangement
+Graphics drivers
+Detect graphics hardware and install or update Debian drivers
 Wallpaper
 Change the desktop background (full image on every screen)
 Sound
@@ -28,6 +30,7 @@ EOF
     case "$choice" in
         "Keyboard language")        doshy-keyboard ;;
         "Display and monitors")     doshy-display ;;
+        "Graphics drivers")         doshy-drivers ;;
         "Wallpaper")                doshy-wallpaper ;;
         "Sound")                    pavucontrol ;;
         "Network")                  nm-connection-editor ;;
