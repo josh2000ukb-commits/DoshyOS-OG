@@ -27,4 +27,14 @@
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">/usr/local/bin/doshy-update-helper</annotate>
   </action>
+  <action id="org.doshy.drivers-helper">
+    <description>Install and update graphics drivers</description>
+    <message>An administrator password is required to check for or install Debian graphics drivers.</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/bin/doshy-drivers-helper</annotate>
+  </action>
 </policyconfig>
