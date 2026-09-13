@@ -1,5 +1,11 @@
 # Updating doshy OS without wiping the drive
 
+## Version 1.0.3
+
+Use **Settings → System updates → Check for updates**, install 1.0.3, and restart.
+This fixes swapped mixed-size monitor layouts by rebuilding the RandR framebuffer
+and clearing active outputs before applying the new positions.
+
 ## Version 1.0.2
 
 Use **Settings → System updates → Check for updates**, install 1.0.2, and restart.

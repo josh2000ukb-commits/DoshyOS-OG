@@ -125,4 +125,5 @@ Record questions that need answers before implementation here.
 Track ideas by target release when a release has been chosen.
 
 - 1.0.2: #1 (main screen and saved layouts) and #8 (graphics driver manager).
-- 1.0.3: to be scoped after 1.0.2 is completed; implementation is not yet authorized.
+- 1.0.3: multi-monitor swap/layout bugfix; larger screens must retain correct
+  framebuffer sizing and mouse coordinates when their side changes.
